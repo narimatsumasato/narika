@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ナリカ！</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f5;min-height:100vh}
+.page{display:none}.page.show{display:block}
+.wrap{max-width:480px;margin:0 auto;padding:16px;padding-bottom:80px}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+label{font-size:11px;color:#666;display:block;margin-bottom:4px}
+input,select{font-size:16px;width:100%;border:1px solid #ddd;border-radius:8px;padding:9px 11px;background:#fff;font-family:inherit;-webkit-appearance:none;appearance:none}
+input:focus,select:focus{outline:2px solid #2563eb;border-color:#2563eb}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.col{flex:1;min-width:0}
+.btn{width:100%;padding:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn:active{opacity:0.8}
+.btn-sm{padding:6px 12px;font-size:13px;cursor:pointer;border-radius:8px;background:#f0f0f0;border:none;color:#1a1a1a;font-family:inherit;white-space:nowrap}
+.btn-red{background:#fee2e2;color:#dc2626}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1.5px solid #ddd;border-radius:99px;padding:5px 12px 5px 7px;margin:3px;font-size:13px;cursor:pointer;background:#f5f5f5;color:#666;user-select:none}
+.chip.on{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8;font-weight:500}
+.av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.sec{font-size:11px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px}
+.item{padding:10px 0;border-bottom:1px solid #f0f0f0}
+.item:last-child{border-bottom:none}
+.tag{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
+.tag-w{background:#fef3c7;color:#92400e}
+.tag-ok{background:#d1fae5;color:#065f46}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat{background:#fff;border-radius:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.stat-l{font-size:11px;color:#888;margin-bottom:3px}
+.stat-v{font-size:20px;font-weight:700}
+.round-row{display:flex;gap:6px;margin-top:6px}
+.rb{flex:1;padding:7px;font-size:12px;border:1.5px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;color:#666;font-family:inherit;font-weight:500}
+.rb.on{background:#2563eb;color:#fff;border-color:#2563eb}
+.warn{background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:10px;font-size:12px;color:#92400e;margin-bottom:10px}
+.info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;font-size:12px;color:#1e40af;margin-bottom:10px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e5;display:flex;width:100%;max-width:480px;margin:0 auto;left:50%;transform:translateX(-50%)}
+.nb{flex:1;padding:10px 4px 8px;font-size:10px;border:none;background:transparent;color:#aaa;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit}
+.nb i{font-size:22px}
+.nb.on{color:#2563eb}
+.logo{text-align:center;padding:40px 0 30px}
+.logo h1{font-size:36px;font-weight:800;color:#2563eb}
+.logo p{font-size:13px;color:#888;margin-top:6px}
+.g-item{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:#fff;border-radius:10px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.g-item:active{background:#f0f7ff}
+.ptitle{font-size:20px;font-weight:700;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<!-- グループ画面 -->
+<div id="p-group" class="page show">
+  <div class="wrap">
+    <div class="logo"><h1>ナリカ！</h1><p>みんなで使える割り勘アプリ</p></div>
+    <div id="my-groups"></div>
+    <div class="card">
+      <label>新しいグループを作る</label>
+      <input type="text" id="gname" placeholder="例：バルカン旅行2025" style="margin-bottom:10px">
+      <button class="btn" id="btn-create-group">グループを作成</button>
+    </div>
+  </div>
+</div>
+
+<!-- メインアプリ -->
+<div id="p-main" class="page">
+  <div class="wrap">
+
+    <!-- メンバー -->
+    <div id="t-members" class="tab show">
+      <div class="ptitle" id="g-title">グループ</div>
+      <div class="card">
+        <label>メンバーを追加</label>
+        <div class="row" style="margin-bottom:0">
+          <div class="col"><input type="text" id="inp-member" placeholder="名前"></div>
+          <button class="btn-sm" id="btn-add-member">追加</button>
+        </div>
+      </div>
+      <div class="sec">メンバー一覧</div>
+      <div class="card" id="member-list">読み込み中...</div>
+
+    </div>
+
+    <!-- 支払い -->
+    <div id="t-expenses" class="tab" style="display:none">
+      <div class="ptitle">支払い記録</div>
+      <div class="card">
+        <div class="row">
+          <div class="col" style="flex:2"><label>内容</label><input type="text" id="inp-ename" placeholder="例：ランチ"></div>
+          <div class="col"><label>日付</label><input type="date" id="inp-edate"></div>
+        </div>
+        <div class="row">
+          <div class="col"><label>金額</label><input type="number" id="inp-eamt" placeholder="0"></div>
+          <div class="col"><label>通貨</label><select id="inp-ecur"></select></div>
+        </div>
+        <label>立替えた人</label>
+        <select id="inp-epayer" style="margin-bottom:10px"></select>
+        <label>受益者 <span style="font-size:10px;color:#aaa">（タップで外せます）</span></label>
+        <div id="ben-chips" style="margin-bottom:6px"></div>
+        <button class="btn" id="btn-add-expense">記録する</button>
+      </div>
+      <div class="sec">記録一覧</div>
+      <div id="exp-list"><div class="card" style="color:#999;font-size:13px">まだ記録がありません</div></div>
+    </div>
+
+    <!-- 為替 -->
+    <div id="t-rates" class="tab" style="display:none">
+      <div class="ptitle">為替レート</div>
+      <div class="info">カードの請求が確定してからレートを入力してください。入力すると自動で円換算されます。</div>
+      <div class="card" id="rate-list">支払いを記録すると表示されます</div>
+    </div>
+
+    <!-- 精算 -->
+    <div id="t-settle" class="tab" style="display:none">
+      <div class="ptitle">精算</div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-l">合計支出</div><div class="stat-v" id="s-total">—</div></div>
+        <div class="stat"><div class="stat-l">1人あたり</div><div class="stat-v" id="s-per">—</div></div>
+      </div>
+      <div class="card" style="padding:11px 13px;margin-bottom:10px">
+        <label>精算単位</label>
+        <div class="round-row">
+          <button class="rb on" data-r="1">1円</button>
+          <button class="rb" data-r="10">10円</button>
+          <button class="rb" data-r="100">100円</button>
+          <button class="rb" data-r="1000">1,000円</button>
+        </div>
+      </div>
+      <div id="s-warn" class="warn" style="display:none">為替未入力の通貨があります。</div>
+      <div class="sec">精算結果</div>
+      <div class="card" id="s-result">為替レートを入力すると表示されます</div>
+      <div class="sec" style="margin-top:12px">個人収支</div>
+      <div class="card" id="s-balance"></div>
+    </div>
+
+  </div>
+</div>
+<nav class="nav" id="main-nav" style="display:none">
+  <button class="nb on" data-tab="members"><i class="ti ti-users"></i>メンバー</button>
+  <button class="nb" data-tab="expenses"><i class="ti ti-receipt"></i>支払い</button>
+  <button class="nb" data-tab="rates"><i class="ti ti-currency-exchange"></i>為替</button>
+  <button class="nb" data-tab="settle"><i class="ti ti-coin-yen"></i>精算</button>
+</nav>
+
+<script>
+const SURL='https://bqlrtohnxwpswgqttqbs.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxbHJ0b2hueHdwc3dncXR0cWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTEwODcsImV4cCI6MjA5NTYyNzA4N30.dZ6gXVHn_pTAnCUWIf1fqWNNRQfh2Jv8r7-mnmzrr9E';
+const db = supabase.createClient(SURL, SKEY);
+
+const CURR=[
+  {code:'JPY',flag:'🇯🇵',name:'円'},
+  {code:'THB',flag:'🇹🇭',name:'バーツ'},
+  {code:'KRW',flag:'🇰🇷',name:'ウォン'},
+  {code:'USD',flag:'🇺🇸',name:'ドル'},
+  {code:'EUR',flag:'🇪🇺',name:'ユーロ'},
+  {code:'GBP',flag:'🇬🇧',name:'ポンド'},
+  {code:'CNY',flag:'🇨🇳',name:'人民元'},
+  {code:'HKD',flag:'🇭🇰',name:'香港ドル'},
+  {code:'TWD',flag:'🇹🇼',name:'台湾ドル'},
+  {code:'SGD',flag:'🇸🇬',name:'SGドル'},
+  {code:'AUD',flag:'🇦🇺',name:'豪ドル'},
+  {code:'CAD',flag:'🇨🇦',name:'CAドル'},
+  {code:'RSD',flag:'🇷🇸',name:'セルビア ディナール'},
+  {code:'HRK',flag:'🇭🇷',name:'クロアチア クーナ'},
+  {code:'BAM',flag:'🇧🇦',name:'ボスニア マルク'},
+  {code:'MKD',flag:'🇲🇰',name:'北マケドニア デナル'},
+  {code:'ALL',flag:'🇦🇱',name:'アルバニア レク'},
+  {code:'BGN',flag:'🇧🇬',name:'ブルガリア レフ'},
+  {code:'RON',flag:'🇷🇴',name:'ルーマニア レウ'},
+  {code:'HUF',flag:'🇭🇺',name:'ハンガリー フォリント'},
+  {code:'MDL',flag:'🇲🇩',name:'モルドバ レウ'},
+  {code:'UAH',flag:'🇺🇦',name:'ウクライナ フリブニャ'},
+];
+const AVC=[
+  {bg:'#dbeafe',c:'#1e40af'},{bg:'#d1fae5',c:'#065f46'},
+  {bg:'#fef3c7',c:'#92400e'},{bg:'#fee2e2',c:'#991b1b'},
+  {bg:'#ede9fe',c:'#4c1d95'},{bg:'#fce7f3',c:'#9d174d'},
+  {bg:'#ffedd5',c:'#9a3412'},{bg:'#f0fdf4',c:'#166534'},
+];
+
+let GID=null, members=[], expenses=[], rates={}, roundUnit=1;
+let subs=[];
+
+function av(i){const c=AVC[i%AVC.length];return `background:${c.bg};color:${c.c}`;}
+function ini(n){return (n||'?').slice(0,2).toUpperCase();}
+function today(){return new Date().toISOString().split('T')[0];}
+function fdate(s){if(!s)return '';const[,m,d]=s.split('-');return `${+m}/${+d}`;}
+function ci(code){return CURR.find(c=>c.code===code)||{code,flag:'',name:code};}
+function rate(code){if(code==='JPY')return 1;const v=parseFloat(rates[code]);return isNaN(v)||v<=0?null:v;}
+function jpy(amt,code){const r=rate(code);return r?amt*r:null;}
+function rnd(v,u){return Math.round(v/u)*u;}
+
+// ページ切替
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+}
+
+// タブ切替
+document.querySelectorAll('.nb').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const tab=btn.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t=>t.style.display='none');
+    document.getElementById('t-'+tab).style.display='block';
+    document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    if(tab==='expenses'){buildSelects();buildChips();}
+    if(tab==='settle')renderSettle();
+    if(tab==='rates')renderRates();
+  });
+});
+
+// 精算単位
+document.querySelectorAll('.rb').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    roundUnit=parseInt(btn.dataset.r);
+    document.querySelectorAll('.rb').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    renderSettle();
+  });
+});
+
+// ===== グループ =====
+async function loadGroups(){
+  const ids=JSON.parse(localStorage.getItem('narika_gids')||'[]');
+  const wrap=document.getElementById('my-groups');
+  if(!ids.length){wrap.innerHTML='';return;}
+  const {data,error}=await db.from('groups').select('*').in('id',ids);
+  if(error||!data||!data.length){wrap.innerHTML='';return;}
+  wrap.innerHTML='<div class="sec">参加中のグループ</div>'+
+    data.map(g=>`<div class="g-item">
+      <div style="flex:1" data-id="${g.id}" data-name="${g.name}">
+        <div style="font-size:15px;font-weight:600">${g.name}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:2px">${new Date(g.created_at).toLocaleDateString('ja-JP')}作成</div>
+      </div>
+      <button class="btn-sm btn-red" data-delg="${g.id}" data-delname="${g.name}" style="margin-right:8px">削除</button>
+      <i class="ti ti-chevron-right" style="color:#ccc;font-size:20px"></i>
+    </div>`).join('');
+  wrap.querySelectorAll('[data-id]').forEach(el=>{
+    el.addEventListener('click',()=>enterGroup(el.dataset.id,el.dataset.name));
+  });
+  wrap.querySelectorAll('[data-delg]').forEach(btn=>{
+    btn.addEventListener('click',async(e)=>{
+      e.stopPropagation();
+      const name=btn.dataset.delname;
+      if(!confirm(`グループ「${name}」を完全に削除しますか？\n（メンバー・支払い・為替の記録も全部消えます。元に戻せません）`))return;
+      const gid=btn.dataset.delg;
+      await db.from('rates').delete().eq('group_id',gid);
+      await db.from('expenses').delete().eq('group_id',gid);
+      await db.from('members').delete().eq('group_id',gid);
+      const {error}=await db.from('groups').delete().eq('id',gid);
+      if(error){alert('削除失敗: '+error.message);return;}
+      const ids=JSON.parse(localStorage.getItem('narika_gids')||'[]').filter(x=>x!==gid);
+      localStorage.setItem('narika_gids',JSON.stringify(ids));
+      loadGroups();
+    });
+  });
+}
+
+document.getElementById('btn-create-group').addEventListener('click',async()=>{
+  const name=document.getElementById('gname').value.trim();
+  if(!name){alert('グループ名を入力してください');return;}
+  const {data,error}=await db.from('groups').insert({name}).select().single();
+  if(error){alert('作成失敗: '+error.message);return;}
+  const ids=JSON.parse(localStorage.getItem('narika_gids')||'[]');
+  ids.push(data.id);
+  localStorage.setItem('narika_gids',JSON.stringify(ids));
+  enterGroup(data.id,data.name);
+});
+
+function enterGroup(id,name){
+  GID=id;
+  document.getElementById('g-title').textContent=name;
+  showPage('p-main');
+  document.getElementById('main-nav').style.display='flex';
+  loadAll();
+  startSubs();
+}
+
+document.getElementById('btn-leave').addEventListener('click',()=>{
+  if(!confirm('このグループから離れますか？'))return;
+  stopSubs();
+  GID=null;
+  document.getElementById('main-nav').style.display='none';
+  showPage('p-group');
+  loadGroups();
+});
+
+// ===== リアルタイム =====
+function startSubs(){
+  stopSubs();
+  subs.push(
+    db.channel('m'+GID).on('postgres_changes',{event:'*',schema:'public',table:'members',filter:`group_id=eq.${GID}`},()=>loadMembers()).subscribe(),
+    db.channel('e'+GID).on('postgres_changes',{event:'*',schema:'public',table:'expenses',filter:`group_id=eq.${GID}`},()=>loadExpenses()).subscribe(),
+    db.channel('r'+GID).on('postgres_changes',{event:'*',schema:'public',table:'rates',filter:`group_id=eq.${GID}`},()=>loadRates()).subscribe()
+  );
+}
+function stopSubs(){subs.forEach(s=>db.removeChannel(s));subs=[];}
+
+// ===== データ =====
+async function loadAll(){
+  await Promise.all([loadMembers(),loadExpenses(),loadRates()]);
+}
+async function loadMembers(){
+  const {data}=await db.from('members').select('*').eq('group_id',GID).order('created_at');
+  members=data||[];
+  renderMembers();buildSelects();buildChips();renderSettle();
+}
+async function loadExpenses(){
+  const {data}=await db.from('expenses').select('*').eq('group_id',GID).order('date').order('created_at');
+  expenses=data||[];
+  renderExpenses();renderRates();renderSettle();
+}
+async function loadRates(){
+  const {data}=await db.from('rates').select('*').eq('group_id',GID);
+  rates={};(data||[]).forEach(r=>{rates[r.currency]=r.rate;});
+  renderExpenses();renderRates();renderSettle();
+}
+
+// ===== メンバー =====
+document.getElementById('btn-add-member').addEventListener('click',async()=>{
+  const inp=document.getElementById('inp-member');
+  const name=inp.value.trim();
+  if(!name)return;
+  if(!GID){alert('グループが選択されていません');return;}
+  if(members.find(m=>m.name===name)){alert('同じ名前がいます');return;}
+  const {error}=await db.from('members').insert({group_id:GID,name});
+  if(error){alert('追加失敗: '+error.message);return;}
+  inp.value='';
+  loadMembers();
+});
+document.getElementById('inp-member').addEventListener('keydown',e=>{
+  if(e.key==='Enter')document.getElementById('btn-add-member').click();
+});
+
+function renderMembers(){
+  const el=document.getElementById('member-list');
+  if(!members.length){el.innerHTML='<div style="color:#aaa;font-size:13px;padding:4px 0">まだメンバーがいません</div>';return;}
+  el.innerHTML=members.map((m,i)=>`
+    <div class="item" style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="av" style="${av(i)};width:32px;height:32px;font-size:12px">${ini(m.name)}</span>
+        <span style="font-size:15px">${m.name}</span>
+      </div>
+      <button class="btn-sm btn-red" data-mid="${m.id}" data-mname="${m.name}">削除</button>
+    </div>`).join('');
+  el.querySelectorAll('[data-mid]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const name=btn.dataset.mname;
+      if(expenses.some(e=>e.payer===name)){alert(`${name}は支払い記録があるため削除できません`);return;}
+      if(!confirm(`${name}を削除しますか？`))return;
+      const {error}=await db.from('members').delete().eq('id',btn.dataset.mid);
+      if(error){alert('削除失敗: '+error.message);return;}
+      loadMembers();
+    });
+  });
+}
+
+// ===== 支払い =====
+function buildSelects(){
+  const ps=document.getElementById('inp-epayer');
+  const cs=document.getElementById('inp-ecur');
+  if(!ps||!cs)return;
+  ps.innerHTML=members.map(m=>`<option value="${m.name}">${m.name}</option>`).join('');
+  cs.innerHTML=CURR.map(c=>`<option value="${c.code}">${c.flag} ${c.code} — ${c.name}</option>`).join('');
+  const di=document.getElementById('inp-edate');
+  if(di&&!di.value)di.value=today();
+}
+function buildChips(){
+  const wrap=document.getElementById('ben-chips');
+  if(!wrap)return;
+  wrap.innerHTML=members.map((m,i)=>
+    `<span class="chip on" data-cid="${m.id}">
+      <span class="av" style="${av(i)}">${ini(m.name)}</span>${m.name}
+    </span>`).join('');
+  wrap.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('on')));
+}
+function selectedBens(){
+  return members.filter(m=>document.querySelector(`[data-cid="${m.id}"].on`)).map(m=>m.name);
+}
+
+document.getElementById('btn-add-expense').addEventListener('click',async()=>{
+  const name=document.getElementById('inp-ename').value.trim();
+  const amt=parseFloat(document.getElementById('inp-eamt').value);
+  const cur=document.getElementById('inp-ecur').value;
+  const payer=document.getElementById('inp-epayer').value;
+  const date=document.getElementById('inp-edate').value;
+  if(!name||isNaN(amt)||amt<=0){alert('内容と金額を入力してください');return;}
+  const bens=selectedBens();
+  if(!bens.length){alert('受益者を1人以上選んでください');return;}
+  const {error}=await db.from('expenses').insert({group_id:GID,name,amount:amt,currency:cur,payer,date,beneficiaries:bens.join(',')});
+  if(error){alert('記録失敗: '+error.message);return;}
+  document.getElementById('inp-ename').value='';
+  document.getElementById('inp-eamt').value='';
+  document.getElementById('inp-edate').value=today();
+  buildChips();
+  loadExpenses();
+});
+
+function renderExpenses(){
+  const el=document.getElementById('exp-list');
+  if(!expenses.length){el.innerHTML='<div class="card" style="color:#aaa;font-size:13px">まだ記録がありません</div>';return;}
+  el.innerHTML=expenses.map(e=>{
+    const c=ci(e.currency);
+    const j=jpy(e.amount,e.currency);
+    const tag=j!==null?`<span class="tag tag-ok">≈${Math.round(j).toLocaleString()}円</span>`:`<span class="tag tag-w">為替待ち</span>`;
+    const blab=e.beneficiaries.split(',').length===members.length?'全員':e.beneficiaries.split(',').join('・');
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px">
+            <span style="font-size:11px;color:#aaa">${fdate(e.date)}</span>
+            <span style="font-size:15px;font-weight:600">${e.name}</span>
+          </div>
+          <div style="font-size:12px;color:#888">${e.payer}払い / 受益者：${blab}</div>
+        </div>
+        <div style="text-align:right;margin-left:8px;flex-shrink:0">
+          <div style="font-size:15px;font-weight:600">${e.amount.toLocaleString()} ${c.flag}${e.currency}</div>
+          <div style="margin-top:2px">${tag}</div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:6px">
+        <button class="btn-sm btn-red" data-eid="${e.id}" style="font-size:12px">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-eid]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      if(!confirm('削除しますか？'))return;
+      const {error}=await db.from('expenses').delete().eq('id',btn.dataset.eid);
+      if(error){alert('削除失敗: '+error.message);return;}
+      loadExpenses();
+    });
+  });
+}
+
+// ===== 為替 =====
+function renderRates(){
+  const el=document.getElementById('rate-list');
+  const used=[...new Set(expenses.map(e=>e.currency))].filter(c=>c!=='JPY');
+  if(!used.length){el.innerHTML='<div style="color:#aaa;font-size:13px;padding:4px 0">支払いを記録すると表示されます</div>';return;}
+  el.innerHTML=used.map(code=>{
+    const c=ci(code);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0">
+      <div>
+        <div style="font-size:14px;font-weight:600">${c.flag} ${code}</div>
+        <div style="font-size:11px;color:#aaa">${c.name}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:12px;color:#aaa">1${code}=</span>
+        <input type="number" step="0.01" placeholder="0.00" value="${rates[code]||''}" data-rc="${code}" style="width:88px;font-size:15px">
+        <span style="font-size:12px;color:#aaa">円</span>
+      </div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-rc]').forEach(inp=>{
+    inp.addEventListener('change',async()=>{
+      const code=inp.dataset.rc;
+      const r=parseFloat(inp.value);
+      if(isNaN(r)||r<=0)return;
+      rates[code]=r;
+      await db.from('rates').upsert({group_id:GID,currency:code,rate:r},{onConflict:'group_id,currency'});
+      loadRates();
+    });
+  });
+}
+
+// ===== 精算 =====
+function renderSettle(){
+  const tel=document.getElementById('s-total');
+  const pel=document.getElementById('s-per');
+  const rel=document.getElementById('s-result');
+  const bel=document.getElementById('s-balance');
+  const wel=document.getElementById('s-warn');
+  if(!tel)return;
+  const missing=[...new Set(expenses.map(e=>e.currency).filter(c=>rate(c)===null))];
+  wel.style.display=missing.length?'block':'none';
+  const bal={};members.forEach(m=>bal[m.name]=0);
+  let total=0,ready=true;
+  expenses.forEach(e=>{
+    const j=jpy(e.amount,e.currency);
+    if(j===null){ready=false;return;}
+    const bens=e.beneficiaries.split(',').filter(Boolean);
+    const share=j/bens.length;
+    bal[e.payer]=(bal[e.payer]||0)+j;
+    bens.forEach(b=>{bal[b]=(bal[b]||0)-share;});
+    total+=j;
+  });
+  if(!ready||!expenses.length){
+    tel.textContent='— 円';pel.textContent='— 円';
+    rel.innerHTML='<div style="color:#aaa;font-size:13px">為替レートを入力すると表示されます</div>';
+    bel.innerHTML='';return;
+  }
+  tel.textContent=Math.round(total).toLocaleString()+'円';
+  pel.textContent=Math.round(total/Math.max(members.length,1)).toLocaleString()+'円';
+  bel.innerHTML=members.map((m,i)=>{
+    const b=bal[m.name]||0;
+    const col=b>0?'#16a34a':b<0?'#dc2626':'#aaa';
+    const lbl=b>0?`+${Math.round(b).toLocaleString()}円 もらう`:b<0?`${Math.round(b).toLocaleString()}円 払う`:'イーブン';
+    return `<div class="item" style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="av" style="${av(i)};width:28px;height:28px;font-size:11px">${ini(m.name)}</span>
+        <span style="font-size:14px">${m.name}</span>
+      </div>
+      <span style="font-size:14px;font-weight:600;color:${col}">${lbl}</span>
+    </div>`;
+  }).join('');
+  let pos=members.filter(m=>bal[m.name]>0.5).map(m=>({n:m.name,a:bal[m.name]})).sort((a,b)=>b.a-a.a);
+  let neg=members.filter(m=>bal[m.name]<-0.5).map(m=>({n:m.name,a:-bal[m.name]})).sort((a,b)=>b.a-a.a);
+  const settles=[];
+  let pi=0,ni=0;
+  while(pi<pos.length&&ni<neg.length){
+    const amt=Math.min(pos[pi].a,neg[ni].a);
+    const r=rnd(amt,roundUnit);
+    if(r>0)settles.push({from:neg[ni].n,to:pos[pi].n,amt:r});
+    pos[pi].a-=amt;neg[ni].a-=amt;
+    if(pos[pi].a<0.5)pi++;if(neg[ni].a<0.5)ni++;
+  }
+  if(!settles.length){rel.innerHTML='<div style="color:#16a34a;font-weight:600;font-size:14px">全員イーブン！精算不要</div>';return;}
+  rel.innerHTML=settles.map(s=>{
+    const fi=members.findIndex(m=>m.name===s.from),ti=members.findIndex(m=>m.name===s.to);
+    return `<div style="display:flex;align-items:center;gap:7px;padding:9px 0;border-bottom:1px solid #f0f0f0">
+      <span class="av" style="${av(fi)};width:28px;height:28px;font-size:11px">${ini(s.from)}</span>
+      <span style="font-size:13px;color:#666;flex:1">${s.from}</span>
+      <i class="ti ti-arrow-right" style="font-size:15px;color:#ccc"></i>
+      <span class="av" style="${av(ti)};width:28px;height:28px;font-size:11px">${ini(s.to)}</span>
+      <span style="font-size:13px;color:#666">${s.to}</span>
+      <span style="font-size:16px;font-weight:700;margin-left:auto">${s.amt.toLocaleString()}円</span>
+    </div>`;
+  }).join('');
+}
+
+// 起動
+loadGroups();
+</script>
+</body>
+</html>
