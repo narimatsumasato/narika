@@ -862,29 +862,4 @@ async function handleSharedUrl(){
 (async()=>{
   function dbg2(msg,color){
     var d=document.createElement('div');
-    d.style.cssText='position:fixed;top:120px;left:0;right:0;background:'+color+';color:#fff;padding:12px;font-size:13px;z-index:999999;white-space:pre-wrap;word-break:break-all';
-    d.textContent='[診断2] '+msg;
-    document.body.appendChild(d);
-  }
-  try{
-    dbg2('起動処理スタート。gid='+(new URLSearchParams(location.search).get('g')||'なし'),'#f59e0b');
-    const params=new URLSearchParams(location.search);
-    const gid=params.get('g');
-    if(gid){
-      const {data,error}=await db.from('groups').select('id,name').eq('id',gid);
-      if(error){dbg2('DBエラー: '+error.message,'#dc2626');return;}
-      if(!data||!data.length){dbg2('グループ0件。gid='+gid,'#dc2626');return;}
-      dbg2('グループ発見: '+data[0].name+' → 開きます','#16a34a');
-      const ids=JSON.parse(localStorage.getItem('narika_gids')||'[]');
-      if(!ids.map(String).includes(String(data[0].id))){ids.push(data[0].id);localStorage.setItem('narika_gids',JSON.stringify(ids));}
-      enterGroup(data[0].id,data[0].name);
-      return;
-    }
-    loadGroups();
-  }catch(err){
-    dbg2('例外発生: '+err.message+'\n'+err.stack,'#dc2626');
-  }
-})();
-</script>
-</body>
-</html>
+    d.style.cssText='position:
