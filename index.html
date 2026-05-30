@@ -185,6 +185,14 @@ input:focus,select:focus{outline:2px solid #2563eb;border-color:#2563eb}
 </nav>
 
 <script>
+// 診断：URLに何が入っているか最初に必ず表示
+(function(){
+  var d=document.createElement('div');
+  d.style.cssText='position:fixed;top:0;left:0;right:0;background:#0ea5e9;color:#fff;padding:12px;font-size:12px;z-index:999999;white-space:pre-wrap;word-break:break-all';
+  d.textContent='[診断] URL全体:\n'+location.href+'\n\nsearch部分: '+(location.search||'(空)');
+  if(document.body){document.body.appendChild(d);}
+  else{document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(d);});}
+})();
 const SURL='https://bqlrtohnxwpswgqttqbs.supabase.co';
 const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxbHJ0b2hueHdwc3dncXR0cWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTEwODcsImV4cCI6MjA5NTYyNzA4N30.dZ6gXVHn_pTAnCUWIf1fqWNNRQfh2Jv8r7-mnmzrr9E';
 const db = supabase.createClient(SURL, SKEY);
